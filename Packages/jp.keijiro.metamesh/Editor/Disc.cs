@@ -7,7 +7,8 @@ using Unity.Mathematics;
 namespace Metamesh {
 
 [System.Serializable]
-public sealed class Disc
+public sealed class Disc : PrimitiveBase
+
 {
     public float Radius = 1;
     [Range(0, 1)] public float Angle = 1;
@@ -15,7 +16,7 @@ public sealed class Disc
     public Axis Axis = Axis.Z;
     public bool DoubleSided = false;
 
-    public void Generate(Mesh mesh)
+    protected override void GenerateMesh(Mesh mesh)
     {
         // Axis selection
         var X = float3.zero;

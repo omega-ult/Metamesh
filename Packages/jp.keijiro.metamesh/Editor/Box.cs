@@ -1,80 +1,93 @@
 using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
+using UnityEngine.Rendering;
+using Unity.Mathematics;
 
-namespace Metamesh {
-
-[System.Serializable]
-public class Box
+namespace Metamesh
 {
-    public float Width = 1;
-    public float Height = 1;
-    public float Depth = 1;
 
-    public void Generate(Mesh mesh)
+    [System.Serializable]
+    public sealed class Box : PrimitiveBase
     {
-        var x = Width  / 2;
-        var y = Height / 2;
-        var z = Depth  / 2;
+        public float Width = 1;
+        public float Height = 1;
+        public float Depth = 1;
 
-        var v0 = new Vector3(-x, -y, -z);
-        var v1 = new Vector3( x, -y, -z);
-        var v2 = new Vector3(-x, -y,  z);
-        var v3 = new Vector3( x, -y,  z);
+        // 重写基类的抽象方法
+        protected override void GenerateMesh(Mesh mesh)
+        {
+            var w = Width / 2;
+            var h = Height / 2;
+            var d = Depth / 2;
 
-        var v4 = new Vector3(-x,  y, -z);
-        var v5 = new Vector3( x,  y, -z);
-        var v6 = new Vector3(-x,  y,  z);
-        var v7 = new Vector3( x,  y,  z);
+            var vertices = new Vector3[]
+            {
+            // 前面
+            new Vector3(-w, -h, d), new Vector3(w, -h, d), new Vector3(w, h, d), new Vector3(-w, h, d),
+            // 后面
+            new Vector3(w, -h, -d), new Vector3(-w, -h, -d), new Vector3(-w, h, -d), new Vector3(w, h, -d),
+            // 上面
+            new Vector3(-w, h, d), new Vector3(w, h, d), new Vector3(w, h, -d), new Vector3(-w, h, -d),
+            // 下面
+            new Vector3(-w, -h, -d), new Vector3(w, -h, -d), new Vector3(w, -h, d), new Vector3(-w, -h, d),
+            // 右面
+            new Vector3(w, -h, d), new Vector3(w, -h, -d), new Vector3(w, h, -d), new Vector3(w, h, d),
+            // 左面
+            new Vector3(-w, -h, -d), new Vector3(-w, -h, d), new Vector3(-w, h, d), new Vector3(-w, h, -d)
+            };
 
-        var t0 = new Vector2(0, 0);
-        var t1 = new Vector2(1, 0);
-        var t2 = new Vector2(0, 1);
-        var t3 = new Vector2(1, 1);
+            var normals = new Vector3[]
+            {
+            // 前面
+            Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward,
+            // 后面
+            Vector3.back, Vector3.back, Vector3.back, Vector3.back,
+            // 上面
+            Vector3.up, Vector3.up, Vector3.up, Vector3.up,
+            // 下面
+            Vector3.down, Vector3.down, Vector3.down, Vector3.down,
+            // 右面
+            Vector3.right, Vector3.right, Vector3.right, Vector3.right,
+            // 左面
+            Vector3.left, Vector3.left, Vector3.left, Vector3.left
+            };
 
-        var vtx = new List<Vector3>();
-        var uv0 = new List<Vector2>();
+            var uvs = new Vector2[]
+            {
+            // 前面
+            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+            // 后面
+            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+            // 上面
+            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+            // 下面
+            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+            // 右面
+            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+            // 左面
+            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1)
+            };
 
-        // Bottom
-        vtx.Add(v0); vtx.Add(v1); vtx.Add(v2);
-        vtx.Add(v1); vtx.Add(v3); vtx.Add(v2);
-        uv0.Add(t1); uv0.Add(t0); uv0.Add(t3);
-        uv0.Add(t0); uv0.Add(t2); uv0.Add(t3);
+            var indices = new int[]
+            {
+            // 前面
+            0, 2, 1, 0, 3, 2,
+            // 后面
+            4, 6, 5, 4, 7, 6,
+            // 上面
+            8, 10, 9, 8, 11, 10,
+            // 下面
+            12, 14, 13, 12, 15, 14,
+            // 右面
+            16, 18, 17, 16, 19, 18,
+            // 左面
+            20, 22, 21, 20, 23, 22
+            };
 
-        // Top
-        vtx.Add(v4); vtx.Add(v6); vtx.Add(v5);
-        vtx.Add(v5); vtx.Add(v6); vtx.Add(v7);
-        uv0.Add(t0); uv0.Add(t2); uv0.Add(t1);
-        uv0.Add(t1); uv0.Add(t2); uv0.Add(t3);
-
-        // Side faces
-        vtx.Add(v0); vtx.Add(v4); vtx.Add(v1);
-        vtx.Add(v1); vtx.Add(v4); vtx.Add(v5);
-        uv0.Add(t0); uv0.Add(t2); uv0.Add(t1);
-        uv0.Add(t1); uv0.Add(t2); uv0.Add(t3);
-
-        vtx.Add(v1); vtx.Add(v5); vtx.Add(v3);
-        vtx.Add(v3); vtx.Add(v5); vtx.Add(v7);
-        uv0.Add(t0); uv0.Add(t2); uv0.Add(t1);
-        uv0.Add(t1); uv0.Add(t2); uv0.Add(t3);
-
-        vtx.Add(v2); vtx.Add(v6); vtx.Add(v0);
-        vtx.Add(v0); vtx.Add(v6); vtx.Add(v4);
-        uv0.Add(t0); uv0.Add(t2); uv0.Add(t1);
-        uv0.Add(t1); uv0.Add(t2); uv0.Add(t3);
-
-        vtx.Add(v3); vtx.Add(v7); vtx.Add(v2);
-        vtx.Add(v2); vtx.Add(v7); vtx.Add(v6);
-        uv0.Add(t0); uv0.Add(t2); uv0.Add(t1);
-        uv0.Add(t1); uv0.Add(t2); uv0.Add(t3);
-
-        var idx = Enumerable.Range(0, vtx.Count).ToList();
-
-        mesh.SetVertices(vtx);
-        mesh.SetUVs(0, uv0);
-        mesh.SetIndices(idx, MeshTopology.Triangles, 0);
-        mesh.RecalculateNormals();
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetUVs(0, uvs);
+            mesh.SetIndices(indices, MeshTopology.Triangles, 0);
+        }
     }
-}
 
 } // namespace Metamesh

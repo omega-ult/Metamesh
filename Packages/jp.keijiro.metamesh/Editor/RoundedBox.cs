@@ -7,7 +7,7 @@ using Unity.Mathematics;
 namespace Metamesh {
 
 [System.Serializable]
-public class RoundedBox
+public class RoundedBox : PrimitiveBase
 {
     public float Width = 1;
     public float Height = 1;
@@ -52,7 +52,7 @@ public class RoundedBox
         return vtx;
     }
 
-    public void Generate(Mesh mesh)
+    protected override void GenerateMesh(Mesh mesh)
     {
         var vc_edge = 2 + Divisions * 2;
 

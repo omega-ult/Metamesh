@@ -3,105 +3,107 @@ using Unity.Mathematics;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Metamesh {
-
-[System.Serializable]
-public class Teapot
+namespace Metamesh
 {
-    public int Subdivision = 10;
 
-    public void Generate(Mesh mesh)
+    [System.Serializable]
+    public class Teapot : PrimitiveBase
+
     {
-        var P = Patches;
+        public int Subdivision = 10;
 
-        // Vertex array construction
-        var vtx = new List<float3>();
-        var nrm = new List<float3>();
-        var uv0 = new List<float2>();
-        for (var offs = 0; offs < P.Length; offs += 16)
+        protected override void GenerateMesh(Mesh mesh)
         {
-            for (var col = 0; col < Subdivision; col++)
+            var P = Patches;
+
+            // Vertex array construction
+            var vtx = new List<float3>();
+            var nrm = new List<float3>();
+            var uv0 = new List<float2>();
+            for (var offs = 0; offs < P.Length; offs += 16)
             {
-                var i = offs;
-                var u = (float)col / (Subdivision - 1);
-                var c0 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
-                var c1 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
-                var c2 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
-                var c3 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
-                for (var row = 0; row < Subdivision; row++)
+                for (var col = 0; col < Subdivision; col++)
                 {
-                    var v = (float)row / (Subdivision - 1);
-                    var p = Evaluate(c0.p, c1.p, c2.p, c3.p, v);
-                    var du = p.d;
-                    var dv = Bezier(c0.d, c1.d, c2.d, c3.d, v);
-                    if (math.length(dv) < math.FLT_MIN_NORMAL) dv = c1.d;
-                    vtx.Add(p.p);
-                    nrm.Add(math.normalize(math.cross(du, dv)));
-                    uv0.Add(math.float2(u, v));
+                    var i = offs;
+                    var u = (float)col / (Subdivision - 1);
+                    var c0 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
+                    var c1 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
+                    var c2 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
+                    var c3 = Evaluate(P[i++], P[i++], P[i++], P[i++], u);
+                    for (var row = 0; row < Subdivision; row++)
+                    {
+                        var v = (float)row / (Subdivision - 1);
+                        var p = Evaluate(c0.p, c1.p, c2.p, c3.p, v);
+                        var du = p.d;
+                        var dv = Bezier(c0.d, c1.d, c2.d, c3.d, v);
+                        if (math.length(dv) < math.FLT_MIN_NORMAL) dv = c1.d;
+                        vtx.Add(p.p);
+                        nrm.Add(math.normalize(math.cross(du, dv)));
+                        uv0.Add(math.float2(u, v));
+                    }
                 }
             }
-        }
 
-        // Index array construction
-        var idx = new List<int>();
-        for (var offs = 0; offs < vtx.Count; offs += Subdivision * Subdivision)
-        {
-            for (var row = 0; row < Subdivision - 1; row++)
+            // Index array construction
+            var idx = new List<int>();
+            for (var offs = 0; offs < vtx.Count; offs += Subdivision * Subdivision)
             {
-                for (var col = 0; col < Subdivision - 1; col++)
+                for (var row = 0; row < Subdivision - 1; row++)
                 {
-                    // Quad indices
-                    var i0 = offs + row * Subdivision + col;
-                    var i1 = i0 + 1;
-                    var i2 = i0 + Subdivision;
-                    var i3 = i0 + Subdivision + 1;
-                    // First triangle
-                    idx.Add(i0);
-                    idx.Add(i1);
-                    idx.Add(i2);
-                    // Second triangle
-                    idx.Add(i1);
-                    idx.Add(i3);
-                    idx.Add(i2);
+                    for (var col = 0; col < Subdivision - 1; col++)
+                    {
+                        // Quad indices
+                        var i0 = offs + row * Subdivision + col;
+                        var i1 = i0 + 1;
+                        var i2 = i0 + Subdivision;
+                        var i3 = i0 + Subdivision + 1;
+                        // First triangle
+                        idx.Add(i0);
+                        idx.Add(i1);
+                        idx.Add(i2);
+                        // Second triangle
+                        idx.Add(i1);
+                        idx.Add(i3);
+                        idx.Add(i2);
+                    }
                 }
             }
+
+            // Mesh object construction
+            mesh.SetVertices(vtx.Select(v => (Vector3)v).ToList());
+            mesh.SetNormals(nrm.Select(n => (Vector3)n).ToList());
+            mesh.SetUVs(0, uv0.Select(t => (Vector2)t).ToList());
+            mesh.SetIndices(idx, MeshTopology.Triangles, 0);
         }
 
-        // Mesh object construction
-        mesh.SetVertices(vtx.Select(v => (Vector3)v).ToList());
-        mesh.SetNormals(nrm.Select(n => (Vector3)n).ToList());
-        mesh.SetUVs(0, uv0.Select(t => (Vector2)t).ToList());
-        mesh.SetIndices(idx, MeshTopology.Triangles, 0);
-    }
+        // Surface evaluation function
+        (float3 p, float3 d)
+          Evaluate(float3 p0, float3 p1, float3 p2, float3 p3, float t)
+            => (Bezier(p0, p1, p2, p3, t), BezierD(p0, p1, p2, p3, t));
 
-    // Surface evaluation function
-    (float3 p, float3 d)
-      Evaluate(float3 p0, float3 p1, float3 p2, float3 p3, float t)
-        => (Bezier(p0, p1, p2, p3, t), BezierD(p0, p1, p2, p3, t));
+        // Bezier curve function
+        float3 Bezier(float3 p0, float3 p1, float3 p2, float3 p3, float t)
+        {
+            var mt = 1 - t;
+            return mt * mt * mt * p0 +
+                   3 * mt * mt * t * p1 +
+                   3 * mt * t * t * p2 +
+                        t * t * t * p3;
+        }
 
-    // Bezier curve function
-    float3 Bezier(float3 p0, float3 p1, float3 p2, float3 p3, float t)
-    {
-        var mt = 1 - t;
-        return     mt * mt * mt * p0 +
-               3 * mt * mt *  t * p1 +
-               3 * mt *  t *  t * p2 +
-                    t *  t *  t * p3;
-    }
+        // Derivative of Bezier
+        float3 BezierD(float3 p0, float3 p1, float3 p2, float3 p3, float t)
+        {
+            var mt = 1 - t;
+            return 3 * mt * mt * (p1 - p0) +
+                   6 * mt * t * (p2 - p1) +
+                   3 * t * t * (p3 - p2);
+        }
 
-    // Derivative of Bezier
-    float3 BezierD(float3 p0, float3 p1, float3 p2, float3 p3, float t)
-    {
-        var mt = 1 - t;
-        return 3 * mt * mt * (p1 - p0) +
-               6 * mt *  t * (p2 - p1) +
-               3 *  t *  t * (p3 - p2);
-    }
-
-    // Utah teapot patches from CGA
-    // http://www.holmes3d.net/graphics/teapot/
-    static readonly float3[] Patches =
-    {
+        // Utah teapot patches from CGA
+        // http://www.holmes3d.net/graphics/teapot/
+        static readonly float3[] Patches =
+        {
         math.float3( 0.280f,  0.465f,  0.000f),
         math.float3( 0.280f,  0.465f, -0.157f),
         math.float3( 0.157f,  0.465f, -0.280f),
@@ -615,6 +617,6 @@ public class Teapot
         math.float3( 0.300f,  0.015f, -0.168f),
         math.float3( 0.300f,  0.015f,  0.000f)
     };
-}
+    }
 
 } // namespace Metamesh

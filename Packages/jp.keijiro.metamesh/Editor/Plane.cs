@@ -4,112 +4,113 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Mathematics;
 
-namespace Metamesh {
-
-[System.Serializable]
-public class Plane
+namespace Metamesh
 {
-    public float2 Size = math.float2(1, 1);
-    public uint2 Subdivisions = math.uint2(2, 2);
-    public Axis Axis = Axis.Y;
-    public bool DoubleSided = false;
 
-    public void Generate(Mesh mesh)
+    [System.Serializable]
+    public class Plane : PrimitiveBase
     {
-        // Parameter sanitization
-        var res = (int2)math.max(2, Subdivisions);
+        public float2 Size = math.float2(1, 1);
+        public uint2 Subdivisions = math.uint2(2, 2);
+        public Axis Axis = Axis.Y;
+        public bool DoubleSided = false;
 
-        // X/Y vectors perpendicular to Axis
-        float3 vx, vy;
-
-        if (Axis == Axis.X)
+        protected override void GenerateMesh(Mesh mesh)
         {
-            vx = math.float3(0, 0, 1);
-            vy = math.float3(0, 1, 0);
-        }
-        else if (Axis == Axis.Y)
-        {
-            vx = math.float3(1, 0, 0);
-            vy = math.float3(0, 0, 1);
-        }
-        else // Axis.Z
-        {
-            vx = math.float3(-1, 0, 0);
-            vy = math.float3(0, 1, 0);
-        }
+            // Parameter sanitization
+            var res = (int2)math.max(2, Subdivisions);
 
-        vx *= Size.x;
-        vy *= Size.y;
+            // X/Y vectors perpendicular to Axis
+            float3 vx, vy;
 
-        // Vertex array
-        var vtx = new List<float3>();
-        var uv0 = new List<float2>();
-
-        for (var iy = 0; iy < res.y; iy++)
-        {
-            for (var ix = 0; ix < res.x; ix++)
+            if (Axis == Axis.X)
             {
-                var uv = math.float2((float)ix / (res.x - 1),
-                                     (float)iy / (res.y - 1));
-
-                var p = math.lerp(-vx, vx, uv.x) +
-                        math.lerp(-vy, vy, uv.y);
-
-                vtx.Add(p);
-                uv0.Add(uv);
+                vx = math.float3(0, 0, 1);
+                vy = math.float3(0, 1, 0);
             }
-        }
-
-        if (DoubleSided)
-        {
-            vtx = vtx.Concat(vtx).ToList();
-            uv0 = uv0.Concat(uv0).ToList();
-        }
-
-        // Index array
-        var idx = new List<int>();
-        var i = 0;
-
-        for (var iy = 0; iy < res.y - 1; iy++, i++)
-        {
-            for (var ix = 0; ix < res.x - 1; ix++, i++)
+            else if (Axis == Axis.Y)
             {
-                idx.Add(i);
-                idx.Add(i + res.x);
-                idx.Add(i + 1);
-
-                idx.Add(i + 1);
-                idx.Add(i + res.x);
-                idx.Add(i + res.x + 1);
+                vx = math.float3(1, 0, 0);
+                vy = math.float3(0, 0, 1);
             }
-        }
+            else // Axis.Z
+            {
+                vx = math.float3(-1, 0, 0);
+                vy = math.float3(0, 1, 0);
+            }
 
-        if (DoubleSided)
-        {
-            i += res.x;
+            vx *= Size.x;
+            vy *= Size.y;
+
+            // Vertex array
+            var vtx = new List<float3>();
+            var uv0 = new List<float2>();
+
+            for (var iy = 0; iy < res.y; iy++)
+            {
+                for (var ix = 0; ix < res.x; ix++)
+                {
+                    var uv = math.float2((float)ix / (res.x - 1),
+                                         (float)iy / (res.y - 1));
+
+                    var p = math.lerp(-vx, vx, uv.x) +
+                            math.lerp(-vy, vy, uv.y);
+
+                    vtx.Add(p);
+                    uv0.Add(uv);
+                }
+            }
+
+            if (DoubleSided)
+            {
+                vtx = vtx.Concat(vtx).ToList();
+                uv0 = uv0.Concat(uv0).ToList();
+            }
+
+            // Index array
+            var idx = new List<int>();
+            var i = 0;
 
             for (var iy = 0; iy < res.y - 1; iy++, i++)
             {
                 for (var ix = 0; ix < res.x - 1; ix++, i++)
                 {
                     idx.Add(i);
-                    idx.Add(i + 1);
                     idx.Add(i + res.x);
+                    idx.Add(i + 1);
 
                     idx.Add(i + 1);
-                    idx.Add(i + res.x + 1);
                     idx.Add(i + res.x);
+                    idx.Add(i + res.x + 1);
                 }
             }
-        }
 
-        // Mesh object construction
-        if (vtx.Count > 65535) mesh.indexFormat = IndexFormat.UInt32;
-        mesh.SetVertices(vtx.Select(v => (Vector3)v).ToList());
-        mesh.SetUVs(0, uv0.Select(v => (Vector2)v).ToList());
-        mesh.SetIndices(idx, MeshTopology.Triangles, 0);
-        mesh.RecalculateNormals();
+            if (DoubleSided)
+            {
+                i += res.x;
+
+                for (var iy = 0; iy < res.y - 1; iy++, i++)
+                {
+                    for (var ix = 0; ix < res.x - 1; ix++, i++)
+                    {
+                        idx.Add(i);
+                        idx.Add(i + 1);
+                        idx.Add(i + res.x);
+
+                        idx.Add(i + 1);
+                        idx.Add(i + res.x + 1);
+                        idx.Add(i + res.x);
+                    }
+                }
+            }
+
+            // Mesh object construction
+            if (vtx.Count > 65535) mesh.indexFormat = IndexFormat.UInt32;
+            mesh.SetVertices(vtx.Select(v => (Vector3)v).ToList());
+            mesh.SetUVs(0, uv0.Select(v => (Vector2)v).ToList());
+            mesh.SetIndices(idx, MeshTopology.Triangles, 0);
+            mesh.RecalculateNormals();
+        }
     }
-}
 
 } // namespace Metamesh

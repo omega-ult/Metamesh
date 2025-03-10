@@ -8,7 +8,7 @@ using Unity.Mathematics;
 namespace Metamesh {
 
 [System.Serializable]
-public sealed class Cylinder
+public sealed class Cylinder : PrimitiveBase
 {
     [FormerlySerializedAs("Radius")] public float TopRadius = 1;
     [FormerlySerializedAs("Radius")] public float BottomRadius = 1;
@@ -18,7 +18,7 @@ public sealed class Cylinder
     public Axis Axis = Axis.Y;
     public bool Caps = true;
 
-    public void Generate(Mesh mesh)
+    protected override void GenerateMesh(Mesh mesh)
     {
         // Parameter sanitization
         var res = math.int2((int)Columns, (int)Rows);

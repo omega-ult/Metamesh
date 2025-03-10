@@ -7,7 +7,8 @@ using Unity.Mathematics;
 namespace Metamesh {
 
 [System.Serializable]
-public sealed class Ring
+public sealed class Ring : PrimitiveBase
+
 {
     public float Radius = 1;
     public float Width = 0.1f;
@@ -16,7 +17,7 @@ public sealed class Ring
     public Axis Axis = Axis.Z;
     public bool DoubleSided = false;
 
-    public void Generate(Mesh mesh)
+    protected override void GenerateMesh(Mesh mesh)
     {
         // Parameter sanitization
         var ext = math.min(Radius, Width / 2);
