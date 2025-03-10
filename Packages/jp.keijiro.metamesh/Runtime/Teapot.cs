@@ -10,10 +10,26 @@ namespace Metamesh
     public class Teapot : PrimitiveBase
 
     {
+        [TopologyAffecting]
         public int Subdivision = 10;
+        
+        // 缓存的拓扑结构数据
+        private int _cachedSubdivision;
+        
+        // 缓存的顶点数据，用于缩放操作
+        private float3[] _originalVertices;
+        
+        protected override int CalculateTopologyHash()
+        {
+            // 计算拓扑哈希值，只考虑影响拓扑的参数
+            return Subdivision.GetHashCode();
+        }
 
         protected override void GenerateMesh(Mesh mesh)
         {
+            // 缓存拓扑参数
+            _cachedSubdivision = Subdivision;
+            
             var P = Patches;
 
             // Vertex array construction
@@ -43,6 +59,9 @@ namespace Metamesh
                     }
                 }
             }
+
+            // 缓存原始顶点位置，用于后续缩放
+            _originalVertices = vtx.ToArray();
 
             // Index array construction
             var idx = new List<int>();
@@ -74,6 +93,37 @@ namespace Metamesh
             mesh.SetNormals(nrm.Select(n => (Vector3)n).ToList());
             mesh.SetUVs(0, uv0.Select(t => (Vector2)t).ToList());
             mesh.SetIndices(idx, MeshTopology.Triangles, 0);
+        }
+        
+        protected override void ReshapeMesh()
+        {
+            // 检查拓扑参数是否变化
+            if (Subdivision != _cachedSubdivision || _originalVertices == null)
+            {
+                // 拓扑结构变化或者没有缓存的顶点数据，需要重新生成整个网格
+                GenerateMesh(CachedMesh);
+                return;
+            }
+            
+            // 对于茶壶模型，我们可以简单地应用全局缩放
+            // 这里我们假设缩放因子为1.0，如果需要可以添加一个Scale属性
+            float scale = 1.0f;
+            
+            // 获取现有顶点数组
+            Vector3[] vertices = CachedMesh.vertices;
+            
+            // 应用缩放
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                vertices[i].x = _originalVertices[i].x * scale;
+                vertices[i].y = _originalVertices[i].y * scale;
+                vertices[i].z = _originalVertices[i].z * scale;
+            }
+            
+            // 更新网格顶点
+            CachedMesh.vertices = vertices;
+            
+            // 由于我们只是均匀缩放，法线不需要更新
         }
 
         // Surface evaluation function

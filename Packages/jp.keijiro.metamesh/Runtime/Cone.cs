@@ -10,25 +10,49 @@ namespace Metamesh
     public sealed class Cone : PrimitiveBase
     {
         // 底部半径
+        [ShapeOnly]
         public float Radius = 0.5f;
         
         // 高度
+        [ShapeOnly]
         public float Height = 1.0f;
         
         // 圆周分段数
+        [TopologyAffecting]
         public int Segments = 32;
         
         // 是否生成底部
+        [TopologyAffecting]
         public bool GenerateBase = true;
         
         // 是否生成UV坐标
+        [TopologyAffecting]
         public bool GenerateUV = true;
+        
+        // 缓存的拓扑结构数据
+        private int _cachedSegments;
+        private bool _cachedGenerateBase;
+        private bool _cachedGenerateUV;
+        
+        protected override int CalculateTopologyHash()
+        {
+            // 计算拓扑哈希值，只考虑影响拓扑的参数
+            int hash = Segments.GetHashCode();
+            hash = hash * 23 + GenerateBase.GetHashCode();
+            hash = hash * 23 + GenerateUV.GetHashCode();
+            return hash;
+        }
         
         // 重写基类的抽象方法
         protected override void GenerateMesh(Mesh mesh)
         {
             // 参数验证
             var segments = math.max(3, Segments);
+            
+            // 缓存拓扑参数
+            _cachedSegments = segments;
+            _cachedGenerateBase = GenerateBase;
+            _cachedGenerateUV = GenerateUV;
             
             // 顶点和UV数组
             var vertices = new List<Vector3>();
@@ -128,6 +152,95 @@ namespace Metamesh
             mesh.SetNormals(normals);
             mesh.SetUVs(0, uvs);
             mesh.SetIndices(indices, MeshTopology.Triangles, 0);
+        }
+        
+        protected override void ReshapeMesh()
+        {
+            // 检查拓扑参数是否变化
+            var segments = math.max(3, Segments);
+            if (segments != _cachedSegments || 
+                GenerateBase != _cachedGenerateBase || 
+                GenerateUV != _cachedGenerateUV)
+            {
+                // 拓扑结构变化，需要重新生成整个网格
+                GenerateMesh(CachedMesh);
+                return;
+            }
+            
+            // 获取现有顶点数组
+            Vector3[] vertices = CachedMesh.vertices;
+            
+            // 更新顶点位置
+            // 更新顶点（圆锥顶点）
+            vertices[0].x = 0;
+            vertices[0].y = Height;
+            vertices[0].z = 0;
+            
+            // 更新底部圆周顶点
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = 2 * math.PI * i / segments;
+                float x = math.cos(angle) * Radius;
+                float z = math.sin(angle) * Radius;
+                
+                int index = i + 1; // 索引从1开始，因为0是顶点
+                vertices[index].x = x;
+                vertices[index].y = 0;
+                vertices[index].z = z;
+            }
+            
+            // 如果有底部
+            if (GenerateBase)
+            {
+                // 底部中心点位置不变，只需更新底部圆周顶点
+                int centerIndex = segments + 2; // 顶点 + 底部圆周顶点数量 + 1
+                
+                // 更新底部圆周顶点
+                for (int i = 0; i <= segments; i++)
+                {
+                    float angle = 2 * math.PI * i / segments;
+                    float x = math.cos(angle) * Radius;
+                    float z = math.sin(angle) * Radius;
+                    
+                    int index = centerIndex + i + 1; // 中心点索引 + 1 + i
+                    if (index < vertices.Length)
+                    {
+                        vertices[index].x = x;
+                        vertices[index].y = 0;
+                        vertices[index].z = z;
+                    }
+                }
+            }
+            
+            // 更新网格顶点
+            CachedMesh.vertices = vertices;
+            
+            // 更新法线
+            Vector3[] normals = CachedMesh.normals;
+            
+            // 更新侧面法线
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = 2 * math.PI * i / segments;
+                float x = math.cos(angle) * Radius;
+                float z = math.sin(angle) * Radius;
+                
+                Vector3 vertexPosition = new Vector3(x, 0, z);
+                Vector3 topPoint = new Vector3(0, Height, 0);
+                
+                // 计算从顶点到底部边缘点的方向向量
+                Vector3 edgeDir = (vertexPosition - topPoint).normalized;
+                // 计算底部圆周的切线方向
+                Vector3 tangent = new Vector3(-z, 0, x).normalized;
+                // 计算垂直于圆锥侧面的法线
+                Vector3 sideNormal = Vector3.Cross(tangent, edgeDir).normalized;
+                
+                int index = i + 1; // 索引从1开始，因为0是顶点
+                normals[index] = sideNormal;
+            }
+            
+            // 更新网格法线
+            CachedMesh.normals = normals;
         }
     }
 }
