@@ -30,6 +30,7 @@ namespace Metamesh
         protected Vector3[] CachedVertices { get; private set; }
         protected Vector3[] CachedNormals { get; private set; }
         
+        public bool IsMeshGenerated => CachedMesh != null;
         // 抽象方法，由子类实现具体的网格生成逻辑
         protected abstract void GenerateMesh(Mesh mesh);
         

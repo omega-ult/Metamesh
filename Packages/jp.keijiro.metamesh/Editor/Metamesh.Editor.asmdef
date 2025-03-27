@@ -1,0 +1,19 @@
+{
+    "name": "Metamesh.Editor",
+    "rootNamespace": "Metamesh",
+    "references": [
+        "Metamesh.Runtime",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
