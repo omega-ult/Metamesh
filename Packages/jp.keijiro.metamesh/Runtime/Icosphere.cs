@@ -7,7 +7,7 @@ namespace Metamesh
 {
 
     [System.Serializable]
-    public sealed class Icosphere : PrimitiveBase
+    public class Icosphere : PrimitiveBase
     {
         [ShapeOnly]
         public float Radius = 1;

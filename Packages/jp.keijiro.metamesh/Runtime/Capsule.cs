@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 namespace Metamesh
 {
     [System.Serializable]
-    public sealed class Capsule : PrimitiveBase
+    public class Capsule : PrimitiveBase
     {
         // 胶囊体半径
         [ShapeOnly]

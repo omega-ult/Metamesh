@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 namespace Metamesh
 {
     [System.Serializable]
-    public sealed class Torus : PrimitiveBase
+    public class Torus : PrimitiveBase
     {
         // 主半径 (环的中心到环面中心的距离)
         [ShapeOnly]

@@ -5,7 +5,7 @@ namespace Metamesh
 {
 
     [System.Serializable]
-    public sealed class Triangle : PrimitiveBase
+    public class Triangle : PrimitiveBase
 
     {
         [ShapeOnly]

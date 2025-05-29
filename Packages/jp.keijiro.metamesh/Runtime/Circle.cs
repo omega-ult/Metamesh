@@ -8,7 +8,7 @@ namespace Metamesh
 {
 
     [System.Serializable]
-    public sealed class Ring : PrimitiveBase
+    public class Ring : PrimitiveBase
 
     {
         [ShapeOnly]

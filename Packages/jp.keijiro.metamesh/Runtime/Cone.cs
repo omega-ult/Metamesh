@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 namespace Metamesh
 {
     [System.Serializable]
-    public sealed class Cone : PrimitiveBase
+    public class Cone : PrimitiveBase
     {
         // 底部半径
         [ShapeOnly]

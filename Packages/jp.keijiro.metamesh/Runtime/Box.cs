@@ -5,7 +5,7 @@ using Unity.Mathematics;
 namespace Metamesh
 {
     [System.Serializable]
-    public sealed class Box : PrimitiveBase
+    public class Box : PrimitiveBase
     {
         [ShapeOnly]
         public float Width = 1;
